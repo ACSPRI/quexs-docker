@@ -1,0 +1,5 @@
+AuthName "queXF Administration"
+AuthType Basic
+AuthUserFile /opt/quexf/password
+AuthGroupFile /opt/quexf/group
+require group admin
