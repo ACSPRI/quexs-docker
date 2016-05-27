@@ -8,7 +8,7 @@ Usage
 
 To create the image `acspri/quexf`, run the following command from the checkout of this repository:
 
-docker build -t acspri/quexf .
+    docker build -t acspri/quexf .
 
 Running the queXF docker image
 ------------------------------
