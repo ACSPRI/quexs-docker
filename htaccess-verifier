@@ -1,5 +1,0 @@
-AuthName "queXF Verifier"
-AuthType Basic
-AuthUserFile /opt/quexf/password
-AuthGroupFile /opt/quexf/group
-require group verifier
