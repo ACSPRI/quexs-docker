@@ -61,8 +61,8 @@ define('QUEXS_PATH', '/');
  * Database configuration for queXS
  */
 define('DB_USER', 'root');
-define('DB_PASS', 'quexs');
-define('DB_HOST', 'quexs-mariadb');
+define('DB_PASS', '');
+define('DB_HOST', 'localhost');
 define('DB_NAME', 'quexs');
 
 
