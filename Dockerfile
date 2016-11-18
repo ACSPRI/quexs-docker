@@ -1,25 +1,32 @@
-FROM tutum/lamp:latest
-MAINTAINER Adam Zammit <adam.zammit@acspri.org.au>
-ENV DEBIAN_FRONTEND noninteractive
+FROM php:5.6-apache
 
-#Install requrements for queXS
-RUN apt-get update && apt-get -y install bzr php5-cli
+# install the PHP extensions we need
+RUN apt-get update && apt-get install -y bzr libpng12-dev libjpeg-dev && rm -rf /var/lib/apt/lists/* \
+	&& docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr \
+	&& docker-php-ext-install gd mysqli opcache
 
-#Enable override all for Apache
-ADD apache_default /etc/apache2/sites-available/000-default.conf
+# set recommended PHP.ini settings
+# see https://secure.php.net/manual/en/opcache.installation.php
+RUN { \
+		echo 'opcache.memory_consumption=128'; \
+		echo 'opcache.interned_strings_buffer=8'; \
+		echo 'opcache.max_accelerated_files=4000'; \
+		echo 'opcache.revalidate_freq=2'; \
+		echo 'opcache.fast_shutdown=1'; \
+		echo 'opcache.enable_cli=1'; \
+	} > /usr/local/etc/php/conf.d/opcache-recommended.ini
 
-#Get latest queXS from BZR
-RUN rm -fr /app && bzr branch lp:quexs /app
+RUN a2enmod rewrite expires
 
-#Configure queXS
-ADD config.inc.local.php /app/config.inc.local.php
+VOLUME /var/www/html
 
-#Add directories for images and config and forms
-RUN chown -R www-data:www-data /app/include/limesurvey/upload && chown -R www-data:www-data /app/include/limesurvey/tmp
+RUN set -x \
+	&& bzr co lp:quexs /usr/src \
+	&& chown -R www-data:www-data /usr/src/quexs
 
-#Add autostart file
-ADD mysql-setup.sh /mysql-setup.sh
-RUN chmod 755 /*.sh
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN ln -s usr/local/bin/docker-entrypoint.sh /entrypoint.sh # backwards compat
 
-EXPOSE 80
-CMD ["/run.sh"]
+# ENTRYPOINT resets CMD
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["apache2-foreground"]
