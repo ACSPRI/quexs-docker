@@ -47,7 +47,7 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 			echo >&2 "WARNING: $(pwd) is not empty - press Ctrl+C now if this is an error!"
 			( set -x; ls -A; sleep 10 )
 		fi
-		tar cf - --one-file-system -C /usr/src/quexs . | tar xf -
+		bzr export /usr/src/quexs . 
 		echo >&2 "Complete! queXS has been successfully copied to $(pwd)"
 	fi
 
