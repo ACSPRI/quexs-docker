@@ -47,7 +47,7 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 			echo >&2 "WARNING: $(pwd) is not empty - press Ctrl+C now if this is an error!"
 			( set -x; ls -A; sleep 10 )
 		fi
-		bzr export /usr/src/quexs . 
+		bzr export . /usr/src/quexs
 		echo >&2 "Complete! queXS has been successfully copied to $(pwd)"
 	fi
 
@@ -68,13 +68,14 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 	set_config() {
 		key="$1"
 		value="$2"
-		sed -ri -e "/$key/s/'[^']*'/'$value'/2" config.inc.local.php
+		sed -i "/$key/s/'[^']*'/'$value'/2" config.inc.local.php
 	}
 
 	set_config 'DB_HOST' "$QUEXS_DB_HOST"
 	set_config 'DB_USER' "$QUEXS_DB_USER"
 	set_config 'DB_PASS' "$QUEXS_DB_PASSWORD"
 	set_config 'DB_NAME' "$QUEXS_DB_NAME"
+    set_config 'QUEXS_PATH' "\/"
 
 	file_env 'QUEXS_DEBUG'
 	if [ "$QUEXS_DEBUG" ]; then

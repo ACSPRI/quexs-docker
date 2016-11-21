@@ -21,8 +21,16 @@ RUN a2enmod rewrite expires
 VOLUME /var/www/html
 
 RUN set -x \
-	&& bzr co lp:quexs /usr/src \
+	&& bzr co lp:quexs /usr/src/quexs \
 	&& chown -R www-data:www-data /usr/src/quexs
+
+#Set PHP defaults for queXS (allow bigger uploads for sample files)
+RUN { \
+		echo 'memory_limit=256M'; \
+		echo 'upload_max_filesize=128M'; \
+		echo 'post_max_size=128M'; \
+		echo 'max_execution_time=120'; \
+	} > /usr/local/etc/php/conf.d/uploads.ini
 
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN ln -s usr/local/bin/docker-entrypoint.sh /entrypoint.sh # backwards compat
