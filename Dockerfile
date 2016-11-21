@@ -30,6 +30,7 @@ RUN { \
 		echo 'upload_max_filesize=128M'; \
 		echo 'post_max_size=128M'; \
 		echo 'max_execution_time=120'; \
+        echo 'date.timezone=UTC'; \
 	} > /usr/local/etc/php/conf.d/uploads.ini
 
 COPY docker-entrypoint.sh /usr/local/bin/
