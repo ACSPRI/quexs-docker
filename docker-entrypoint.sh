@@ -25,6 +25,7 @@ file_env() {
 
 if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 	file_env 'QUEXS_DB_HOST' 'mysql'
+    file_env 'QUEXS_PATH' "\/"
 	# if we're linked to MySQL and thus have credentials already, let's use them
 	file_env 'QUEXS_DB_USER' "${MYSQL_ENV_MYSQL_USER:-root}"
 	if [ "$QUEXS_DB_USER" = 'root' ]; then
@@ -49,7 +50,12 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 		fi
 		bzr export . /usr/src/quexs
 		echo >&2 "Complete! queXS has been successfully copied to $(pwd)"
+	else
+        echo >&2 "queXS found in $(pwd) - not copying."
 	fi
+
+    chown www-data:www-data -R /var/www/html/include/limesurvey/tmp 
+    chown www-data:www-data -R /var/www/html/include/limesurvey/upload 
 
 	if [ ! -e config.inc.local.php ]; then
 	    cp config.inc.local.php.example config.inc.local.php
@@ -75,7 +81,7 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 	set_config 'DB_USER' "$QUEXS_DB_USER"
 	set_config 'DB_PASS' "$QUEXS_DB_PASSWORD"
 	set_config 'DB_NAME' "$QUEXS_DB_NAME"
-    set_config 'QUEXS_PATH' "\/"
+	set_config 'QUEXS_PATH' "$QUEXS_PATH"
 
 	file_env 'QUEXS_DEBUG'
 	if [ "$QUEXS_DEBUG" ]; then
@@ -116,8 +122,8 @@ if (!$mysql->query('CREATE DATABASE IF NOT EXISTS `' . $mysql->real_escape_strin
 
 // check if database populated
 
-if (!$mysql->query('SELECT COUNT(*) AS C FROM outcome')) {
-    fwrite($stderr, "\n" . 'Cannot find queXS database. Will now populate. Error: ' . $mysql->error . "\n");
+if (!$mysql->query('SELECT COUNT(*) AS C FROM ' . $argv[4] . '.outcome')) {
+    fwrite($stderr, "\n" . 'Cannot find queXS database. Will now populate... ' . $mysql->error . "\n");
 
     $command = 'mysql'
         . ' --host=' . $host
@@ -126,10 +132,14 @@ if (!$mysql->query('SELECT COUNT(*) AS C FROM outcome')) {
         . ' --database=' . $argv[4]
         . ' --execute="SOURCE ';
 
-    $output1 = shell_exec($command . '/database/quexs.sql"');
+    fwrite($stderr, "\n" . 'Loading queXS database...' . "\n");
+    $output1 = shell_exec($command . '/var/www/html/database/quexs.sql"');
     fwrite($stderr, "\n" . 'Loaded queXS database: ' . $output1 . "\n");
-    $output2 = shell_exec($command . '/database/quexs_US.sql"');
+    fwrite($stderr, "\n" . 'Loading queXS US customisations...' . "\n");
+    $output2 = shell_exec($command . '/var/www/html/database/queXS_US.sql"');
     fwrite($stderr, "\n" . 'Loaded queXS US customisations: ' . $output2 . "\n");
+} else {
+	fwrite($stderr, "\n" . 'queXS Database found. Leaving unchanged.' . "\n");
 }
 
 $mysql->close();

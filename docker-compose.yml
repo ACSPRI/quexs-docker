@@ -8,6 +8,7 @@ services:
       - 8080:80
     environment:
       QUEXS_DB_PASSWORD: example
+      QUEXS_PATH: :8080\/
 
   mysql:
     image: mariadb
