@@ -3,7 +3,7 @@ version: '2'
 services:
 
   quexs:
-    image: acspri/quexs-production
+    image: acspri/quexs
     ports:
       - 8080:80
     environment:
