@@ -26,6 +26,7 @@ file_env() {
 if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 	file_env 'QUEXS_DB_HOST' 'mysql'
     file_env 'QUEXS_PATH' "\/"
+    file_env 'QUEXS_PORT' ""
 	# if we're linked to MySQL and thus have credentials already, let's use them
 	file_env 'QUEXS_DB_USER' "${MYSQL_ENV_MYSQL_USER:-root}"
 	if [ "$QUEXS_DB_USER" = 'root' ]; then
@@ -82,6 +83,7 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 	set_config 'DB_PASS' "$QUEXS_DB_PASSWORD"
 	set_config 'DB_NAME' "$QUEXS_DB_NAME"
 	set_config 'QUEXS_PATH' "$QUEXS_PATH"
+    set_config 'QUEXS_PORT' "$QUEXS_PORT"
 
 	file_env 'QUEXS_DEBUG'
 	if [ "$QUEXS_DEBUG" ]; then
@@ -145,7 +147,9 @@ if (!$mysql->query('SELECT COUNT(*) AS C FROM ' . $argv[4] . '.outcome')) {
 $mysql->close();
 EOPHP
 
+#Run system sort processes
 
+su -s /bin/bash -c "php /var/www/html/voip/startvoipprocess.php" www-data &
 
 fi
 
