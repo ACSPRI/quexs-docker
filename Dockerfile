@@ -21,8 +21,16 @@ RUN a2enmod rewrite expires
 VOLUME /var/www/html
 
 RUN set -x \
-	&& bzr co lp:quexs /usr/src/quexs \
+	&& bzr co lp:~adamzammit/quexs/quexs-remotelime /usr/src/quexs \
 	&& chown -R www-data:www-data /usr/src/quexs
+
+#use ADODB
+RUN set -x \
+	&& curl -o adodb.tar.gz -fSL "https://github.com/ADOdb/ADOdb/archive/v5.20.7.tar.gz" \
+	&& tar -xzf adodb.tar.gz -C /usr/src/ \
+	&& rm adodb.tar.gz \
+	&& mkdir /usr/share/php \
+	&& mv /usr/src/ADOdb-5.20.7 /usr/share/php/adodb
 
 #Set PHP defaults for queXS (allow bigger uploads for sample files)
 RUN { \

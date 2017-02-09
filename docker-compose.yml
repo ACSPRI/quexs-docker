@@ -3,12 +3,11 @@ version: '2'
 services:
 
   quexs:
-    image: acspri/quexs
+    image: acspri/quexs:remotelime
     ports:
       - 8080:80
     environment:
       QUEXS_DB_PASSWORD: example
-      QUEXS_PORT: :8080
 
   mysql:
     image: mariadb
