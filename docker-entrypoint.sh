@@ -55,9 +55,6 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
         echo >&2 "queXS found in $(pwd) - not copying."
 	fi
 
-    chown www-data:www-data -R /var/www/html/include/limesurvey/tmp 
-    chown www-data:www-data -R /var/www/html/include/limesurvey/upload 
-
 	if [ ! -e config.inc.local.php ]; then
 	    cp config.inc.local.php.example config.inc.local.php
     fi
