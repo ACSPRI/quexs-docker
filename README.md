@@ -16,6 +16,7 @@ The following environment variables are also honored for configuring your queXS 
 -	`-e QUEXS_DB_NAME=...` (defaults to "quexs")
 -	`-e QUEXS_PATH=...` (defaults to "\/" - set this to "\/quexs" for example if running in a subdirectory)
 -	`-e QUEXS_PORT=...` (defaults to "" - set this to ":8080" for example if running on port 8080)
+-	`-e QUEXS_ADMIN_PASSWORD=...` (defaults to "" - set this to update the admin password)
 
 If the `QUEXS_DB_NAME` specified does not already exist on the given MySQL server, it will be created automatically upon startup of the `quexs` container, provided that the `QUEXS_DB_USER` specified has the necessary permissions to create it.
 

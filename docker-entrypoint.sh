@@ -27,6 +27,7 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 	file_env 'QUEXS_DB_HOST' 'mysql'
     file_env 'QUEXS_PATH' "\/"
     file_env 'QUEXS_PORT' ""
+    file_env 'QUEXS_ADMIN_PASSWORD' ""
 	# if we're linked to MySQL and thus have credentials already, let's use them
 	file_env 'QUEXS_DB_USER' "${MYSQL_ENV_MYSQL_USER:-root}"
 	if [ "$QUEXS_DB_USER" = 'root' ]; then
@@ -90,7 +91,11 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 		set_config 'DEBUG' 1 
 	fi
 
-	TERM=dumb php -- "$QUEXS_DB_HOST" "$QUEXS_DB_USER" "$QUEXS_DB_PASSWORD" "$QUEXS_DB_NAME" <<'EOPHP'
+	if [ "$QUEXS_ADMIN_PASSWORD" ]; then
+		QUEXS_ADMIN_PASSWORD=`printf $QUEXS_ADMIN_PASSWORD | sha256sum | awk '{ print $1 }'`
+	fi
+
+	TERM=dumb php -- "$QUEXS_DB_HOST" "$QUEXS_DB_USER" "$QUEXS_DB_PASSWORD" "$QUEXS_DB_NAME" "$QUEXS_ADMIN_PASSWORD" <<'EOPHP'
 <?php
 // database might not exist, so let's try creating it (just to be safe)
 
@@ -124,7 +129,7 @@ if (!$mysql->query('CREATE DATABASE IF NOT EXISTS `' . $mysql->real_escape_strin
 
 // check if database populated
 
-if (!$mysql->query('SELECT COUNT(*) AS C FROM ' . $argv[4] . '.outcome')) {
+if (!$mysql->query('SELECT COUNT(*) AS C FROM ' . $mysql->real_escape_string($argv[4]) . '.outcome')) {
     fwrite($stderr, "\n" . 'Cannot find queXS database. Will now populate... ' . $mysql->error . "\n");
 
     $command = 'mysql'
@@ -140,8 +145,14 @@ if (!$mysql->query('SELECT COUNT(*) AS C FROM ' . $argv[4] . '.outcome')) {
     fwrite($stderr, "\n" . 'Loading queXS US customisations...' . "\n");
     $output2 = shell_exec($command . '/var/www/html/database/queXS_US.sql"');
     fwrite($stderr, "\n" . 'Loaded queXS US customisations: ' . $output2 . "\n");
+
 } else {
 	fwrite($stderr, "\n" . 'queXS Database found. Leaving unchanged.' . "\n");
+}
+
+if (!empty($argv[5])) {
+    $mysql->query('UPDATE ' . $mysql->real_escape_string($argv[4]) . '.users SET password = ' . $mysql->real_escape_string($argv[5]) . ' WHERE uid = 1');
+    fwrite($stderr, "\n" . 'Updated queXS admin password.' . "\n");
 }
 
 $mysql->close();
