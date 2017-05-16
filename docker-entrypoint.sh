@@ -148,8 +148,11 @@ if (!$mysql->query('SELECT COUNT(*) AS C FROM ' . $mysql->real_escape_string($ar
 }
 
 if (!empty($argv[5])) {
-    $mysql->query('UPDATE ' . $mysql->real_escape_string($argv[4]) . '.users SET password = ' . $mysql->real_escape_string($argv[5]) . ' WHERE uid = 1');
-    fwrite($stderr, "\n" . 'Updated queXS admin password.' . "\n");
+    if ($mysql->query('UPDATE ' . $mysql->real_escape_string($argv[4]) . '.users SET password = \'' . $mysql->real_escape_string($argv[5]) . '\' WHERE uid = 1')) {
+	    fwrite($stderr, "\n" . 'Updated queXS admin password.' . "\n");
+	} else {
+	    fwrite($stderr, "\n" . 'Failed to update admin password.' .  "\n");
+	}
 }
 
 $mysql->close();
