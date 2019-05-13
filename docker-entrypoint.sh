@@ -25,9 +25,11 @@ file_env() {
 
 if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 	file_env 'QUEXS_DB_HOST' 'mysql'
-    file_env 'QUEXS_PATH' "\/"
+    file_env 'QUEXS_PATH' "/"
     file_env 'QUEXS_PORT' ""
     file_env 'QUEXS_ADMIN_PASSWORD' ""
+	file_env 'MYSQL_SSL_CA' ''
+
 	# if we're linked to MySQL and thus have credentials already, let's use them
 	file_env 'QUEXS_DB_USER' "${MYSQL_ENV_MYSQL_USER:-root}"
 	if [ "$QUEXS_DB_USER" = 'root' ]; then
@@ -60,6 +62,12 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 	    cp config.inc.local.php.example config.inc.local.php
     fi
 
+    # Install BaltimoreCyberTrustRoot.crt.pem
+    if [ ! -e BaltimoreCyberTrustRoot.crt.pem ]; then
+        echo "Downloading BaltimoreCyberTrustroot.crt.pem"
+        curl -o BaltimoreCyberTrustRoot.crt.pem -fsL "https://www.digicert.com/CACerts/BaltimoreCyberTrustRoot.crt.pem"
+    fi
+
 	# see http://stackoverflow.com/a/2705678/433558
 	sed_escape_lhs() {
 		echo "$@" | sed -e 's/[]\/$*.^|[]/\\&/g'
@@ -72,8 +80,8 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 	}
 	set_config() {
 		key="$1"
-		value="$2"
-		sed -i "/$key/s/'[^']*'/'$value'/2" config.inc.local.php
+        value="$(sed_escape_lhs "$2")"
+        sed -i "/$key/s/[^,]*/'$value');/2" config.inc.local.php
 	}
 
 	set_config 'DB_HOST' "$QUEXS_DB_HOST"
@@ -82,6 +90,7 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 	set_config 'DB_NAME' "$QUEXS_DB_NAME"
 	set_config 'QUEXS_PATH' "$QUEXS_PATH"
     set_config 'QUEXS_PORT' "$QUEXS_PORT"
+    set_config 'DB_SSL' "$MYSQL_SSL_CA" 
 
 	file_env 'QUEXS_DEBUG'
 	if [ "$QUEXS_DEBUG" ]; then
@@ -92,7 +101,7 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 		QUEXS_ADMIN_PASSWORD=`printf $QUEXS_ADMIN_PASSWORD | sha256sum | awk '{ print $1 }'`
 	fi
 
-	TERM=dumb php -- "$QUEXS_DB_HOST" "$QUEXS_DB_USER" "$QUEXS_DB_PASSWORD" "$QUEXS_DB_NAME" "$QUEXS_ADMIN_PASSWORD" <<'EOPHP'
+	TERM=dumb php -- "$QUEXS_DB_HOST" "$QUEXS_DB_USER" "$QUEXS_DB_PASSWORD" "$QUEXS_DB_NAME" "$QUEXS_ADMIN_PASSWORD" "$MYSQL_SSL_CA" <<'EOPHP'
 <?php
 // database might not exist, so let's try creating it (just to be safe)
 
@@ -107,26 +116,31 @@ if (is_numeric($socket)) {
 
 $maxTries = 10;
 do {
-	$mysql = new mysqli($host, $argv[2], $argv[3], '', $port, $socket);
-	if ($mysql->connect_error) {
-		fwrite($stderr, "\n" . 'MySQL Connection Error: (' . $mysql->connect_errno . ') ' . $mysql->connect_error . "\n");
-		--$maxTries;
-		if ($maxTries <= 0) {
-			exit(1);
-		}
-		sleep(3);
-	}
-} while ($mysql->connect_error);
+    $con = mysqli_init();
+    if (isset($argv[6]) && !empty($argv[6])) {
+	    mysqli_ssl_set($con,NULL,NULL,$argv[6],NULL,NULL);
+    }
+    $mysql = mysqli_real_connect($con,$host, $argv[2], $argv[3], '', $port, $socket, MYSQLI_CLIENT_SSL_DONT_VERIFY_SERVER_CERT);
+        if (!$mysql) {
+                fwrite($stderr, "\n" . 'MySQL Connection Error: (' . $mysql->connect_errno . ') ' . $mysql->connect_error . "\n");
+                --$maxTries;
+                if ($maxTries <= 0) {
+                        exit(1);
+                }
+                sleep(3);
+        }
+} while (!$mysql);
 
-if (!$mysql->query('CREATE DATABASE IF NOT EXISTS `' . $mysql->real_escape_string($argv[4]) . '`')) {
-	fwrite($stderr, "\n" . 'MySQL "CREATE DATABASE" Error: ' . $mysql->error . "\n");
-	$mysql->close();
-	exit(1);
+if (!$con->query('CREATE DATABASE IF NOT EXISTS `' . $con->real_escape_string($argv[4]) . '`')) {
+        fwrite($stderr, "\n" . 'MySQL "CREATE DATABASE" Error: ' . $con->error . "\n");
+        $con->close();
+        exit(1);
 }
 
 // check if database populated
+$con->select_db($con->real_escape_string($argv[4]));
 
-if (!$mysql->query('SELECT COUNT(*) AS C FROM ' . $mysql->real_escape_string($argv[4]) . '.outcome')) {
+if (!$con->query('SELECT COUNT(*) AS C FROM ' . $con->real_escape_string($argv[4]) . '.outcome')) {
     fwrite($stderr, "\n" . 'Cannot find queXS database. Will now populate... ' . $mysql->error . "\n");
 
     $command = 'mysql'
@@ -134,6 +148,7 @@ if (!$mysql->query('SELECT COUNT(*) AS C FROM ' . $mysql->real_escape_string($ar
         . ' --user=' . $argv[2]
         . ' --password=' . $argv[3]
         . ' --database=' . $argv[4]
+        . ' --ssl-ca=' . $argv[6]
         . ' --execute="SOURCE ';
 
     fwrite($stderr, "\n" . 'Loading queXS database...' . "\n");
@@ -148,14 +163,14 @@ if (!$mysql->query('SELECT COUNT(*) AS C FROM ' . $mysql->real_escape_string($ar
 }
 
 if (!empty($argv[5])) {
-    if ($mysql->query('UPDATE ' . $mysql->real_escape_string($argv[4]) . '.users SET password = \'' . $mysql->real_escape_string($argv[5]) . '\' WHERE uid = 1')) {
+    if ($con->query('UPDATE ' . $con->real_escape_string($argv[4]) . '.users SET password = \'' . $con->real_escape_string($argv[5]) . '\' WHERE uid = 1')) {
 	    fwrite($stderr, "\n" . 'Updated queXS admin password.' . "\n");
 	} else {
 	    fwrite($stderr, "\n" . 'Failed to update admin password.' .  "\n");
 	}
 }
 
-$mysql->close();
+$con->close();
 EOPHP
 
 #Run system sort processes

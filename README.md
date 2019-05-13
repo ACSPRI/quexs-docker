@@ -5,7 +5,7 @@
 # How to use this image
 
 ```console
-$ docker run --name some-quexs --link some-mysql:mysql -d acspri/quexs
+$ docker run --name some-quexs --link some-mysql:mysql -d acspri/quexs:remotelime
 ```
 
 The following environment variables are also honored for configuring your queXS instance:
@@ -14,16 +14,17 @@ The following environment variables are also honored for configuring your queXS 
 -	`-e QUEXS_DB_USER=...` (defaults to "root")
 -	`-e QUEXS_DB_PASSWORD=...` (defaults to the value of the `MYSQL_ROOT_PASSWORD` environment variable from the linked `mysql` container)
 -	`-e QUEXS_DB_NAME=...` (defaults to "quexs")
--	`-e QUEXS_PATH=...` (defaults to "\/" - set this to "\/quexs" for example if running in a subdirectory)
+-	`-e QUEXS_PATH=...` (defaults to "/" - set this to "/quexs" for example if running in a subdirectory)
 -	`-e QUEXS_PORT=...` (defaults to "" - set this to ":8080" for example if running on port 8080)
 -	`-e QUEXS_ADMIN_PASSWORD=...` (defaults to "" - set this to update the admin password)
+-	`-e MYSQL_SSL_CA=...` (path to an SSL CA for MySQL. Do not set or leave blank for a non SSL connection)
 
 If the `QUEXS_DB_NAME` specified does not already exist on the given MySQL server, it will be created automatically upon startup of the `quexs` container, provided that the `QUEXS_DB_USER` specified has the necessary permissions to create it.
 
 If you'd like to be able to access the instance from the host without the container's IP, standard port mappings can be used:
 
 ```console
-$ docker run --name some-quexs --link some-mysql:mysql -p 8080:80 -d acspri/quexs
+$ docker run --name some-quexs --link some-mysql:mysql -p 8080:80 -d acspri/quexs:remotelime
 ```
 
 Then, access it via `http://localhost:8080` or `http://host-ip:8080` in a browser.
@@ -32,7 +33,7 @@ If you'd like to use an external database instead of a linked `mysql` container,
 
 ```console
 $ docker run --name some-quexs -e QUEXS_DB_HOST=10.1.2.3:3306 \
-    -e QUEXS_DB_USER=... -e QUEXS_DB_PASSWORD=... -d acspri/quexs
+    -e QUEXS_DB_USER=... -e QUEXS_DB_PASSWORD=... -d acspri/quexs:remotelime
 ```
 
 ## ... via [`docker-compose`](https://github.com/docker/compose)
@@ -45,7 +46,7 @@ version: '2'
 services:
 
   quexs:
-    image: quexs
+    image: acspri/quexs:remotelime
     ports:
       - 8080:80
     environment:

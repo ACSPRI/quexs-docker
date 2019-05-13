@@ -1,0 +1,12 @@
+version: '3.3'
+
+services:
+  quexs:
+    image: acspri/quexs:remotelime
+    environment:
+      QUEXS_DB_PASSWORD: example
+      QUEXS_DB_HOST: example.mysql.database.azure.com
+      QUEXS_DB_USER: example@example
+      QUEXS_ADMIN_PASSWORD: password
+      MYSQL_SSL_CA: /var/www/html/BaltimoreCyberTrustRoot.crt.pem
+    restart: always
