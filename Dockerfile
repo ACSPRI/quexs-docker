@@ -1,7 +1,9 @@
-FROM php:7.2-apache
+FROM php:7.3-apache
+
+ENV DOWNLOAD_URL https://master.dl.sourceforge.net/project/quexs/quexs/quexs-2.2.4/quexs-2.2.4.zip
 
 # install the PHP extensions we need
-RUN apt-get update && apt-get install -y bzr libpng-dev libjpeg-dev mysql-client libfreetype6-dev && rm -rf /var/lib/apt/lists/* \
+RUN apt-get update && apt-get install -y mariadb-client unzip libpng-dev libjpeg-dev libfreetype6-dev && rm -rf /var/lib/apt/lists/* \
 	&& docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-png-dir=/usr --with-jpeg-dir=/usr \
 	&& docker-php-ext-install gd mysqli pdo_mysql opcache
 
@@ -18,11 +20,13 @@ RUN { \
 
 RUN a2enmod rewrite expires
 
-VOLUME /var/www/html
-
-RUN set -x \
-	&& bzr co lp:~adamzammit/quexs/quexs-remotelime /usr/src/quexs \
-	&& chown -R www-data:www-data /usr/src/quexs
+RUN set -x; \
+	curl -SL "$DOWNLOAD_URL" -o /tmp/quexs.zip; \
+    unzip /tmp/quexs.zip -d /tmp; \
+    mv /tmp/quexs*/* /var/www/html/; \
+    rm /tmp/quexs.zip; \
+    rmdir /tmp/quexs*; \
+    chown -R www-data:www-data /var/www/html
 
 #use ADODB
 RUN set -x \
