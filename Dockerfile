@@ -1,9 +1,11 @@
-FROM php:7-apache
+FROM php:7.3-apache
+
+ENV DOWNLOAD_URL https://master.dl.sourceforge.net/project/quexs/quexs/quexs-1.16.3/quexs-1.16.3.zip
 
 # install the PHP extensions we need
-RUN apt-get update && apt-get install -y bzr libpng-dev libjpeg-dev mysql-client libfreetype6-dev && rm -rf /var/lib/apt/lists/* \
+RUN apt-get update && apt-get install -y mariadb-client unzip libpng-dev libjpeg-dev libfreetype6-dev && rm -rf /var/lib/apt/lists/* \
 	&& docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-png-dir=/usr --with-jpeg-dir=/usr \
-	&& docker-php-ext-install gd mysqli opcache
+	&& docker-php-ext-install gd mysqli pdo_mysql opcache
 
 # set recommended PHP.ini settings
 # see https://secure.php.net/manual/en/opcache.installation.php
@@ -18,11 +20,21 @@ RUN { \
 
 RUN a2enmod rewrite expires
 
-VOLUME /var/www/html
+RUN set -x; \
+	curl -SL "$DOWNLOAD_URL" -o /tmp/quexs.zip; \
+    unzip /tmp/quexs.zip -d /tmp; \
+    mv /tmp/quexs*/* /var/www/html/; \
+    rm /tmp/quexs.zip; \
+    rmdir /tmp/quexs*; \
+    chown -R www-data:www-data /var/www/html
 
+#use ADODB
 RUN set -x \
-	&& bzr co lp:quexs /usr/src/quexs \
-	&& chown -R www-data:www-data /usr/src/quexs
+	&& curl -o adodb.tar.gz -fSL "https://github.com/ADOdb/ADOdb/archive/master.tar.gz" \
+	&& tar -xzf adodb.tar.gz -C /usr/src/ \
+	&& rm adodb.tar.gz \
+	&& mkdir /usr/share/php \
+	&& mv /usr/src/ADOdb-master /usr/share/php/adodb
 
 #Set PHP defaults for queXS (allow bigger uploads for sample files)
 RUN { \
