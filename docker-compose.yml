@@ -4,6 +4,7 @@ services:
 
   quexs:
     image: acspri/quexs:remotelime
+    build: .
     ports:
       - 8080:80
     environment:
