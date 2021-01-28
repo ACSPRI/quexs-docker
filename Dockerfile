@@ -1,10 +1,10 @@
-FROM php:7.3-apache
+FROM php:7.4-apache
 
 ENV DOWNLOAD_URL https://master.dl.sourceforge.net/project/quexs/quexs/quexs-1.16.5/quexs-1.16.5.zip
 
 # install the PHP extensions we need
 RUN apt-get update && apt-get install -y mariadb-client unzip libpng-dev libjpeg-dev libfreetype6-dev && rm -rf /var/lib/apt/lists/* \
-	&& docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-png-dir=/usr --with-jpeg-dir=/usr \
+	&& docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr \
 	&& docker-php-ext-install gd mysqli pdo_mysql opcache
 
 # set recommended PHP.ini settings
